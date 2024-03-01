@@ -94,13 +94,13 @@ class GNNTrainer():
             
             avg_train_loss = train_loss / num_molecules_train
 
-            plt.plot(pred[0].cpu().detach().numpy())
-            plt.plot(batch[0].spectrum.cpu().detach().numpy())
-            plt.ylim(-0.2, 1.2)
-            plt.xlim(0, 200)
-            plt.title(f'epoch: {epoch}')
-            plt.savefig(f'./images/training/graph_{epoch}.png')
-            plt.close()
+            # plt.plot(pred[0].cpu().detach().numpy())
+            # plt.plot(batch[0].spectrum.cpu().detach().numpy())
+            # plt.ylim(-0.2, 1.2)
+            # plt.xlim(0, 200)
+            # plt.title(f'epoch: {epoch}')
+            # plt.savefig(f'./images/training/graph_{epoch}.png')
+            # plt.close()
 
             with torch.no_grad():
                 self.model.eval()
