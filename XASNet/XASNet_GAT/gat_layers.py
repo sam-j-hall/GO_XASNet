@@ -78,7 +78,7 @@ class GATLayerCus(MessagePassing):
         return out
 
     def aggregate(self, inputs, index, dim_size=None):
-        out = torch_scatter.scatter(inputs, index, dim=self.node_dim, 
+        out = scatter(inputs, index, dim=self.node_dim, 
         dim_size=dim_size, reduce='sum')
 
         out = self.res_block(out)
@@ -154,7 +154,7 @@ class GATv2LayerCus(MessagePassing):
         return out
 
     def aggregate(self, inputs, index, dim_size=None):
-        out = torch_scatter.scatter(inputs, index, dim=self.node_dim, 
+        out = scatter(inputs, index, dim=self.node_dim, 
         dim_size=dim_size, reduce='sum')
 
         out = self.res_block(out)

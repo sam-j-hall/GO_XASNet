@@ -1,1 +1,1 @@
-{"training": true, "gnn_name": "gcn", "in_channels": [17, 256, 128], "out_channels": [256, 128, 64], "num_targets": 200, "num_layers": 3, "heads": 1}
+{"training": true, "node_features_dim": 17, "in_channels": [128, 128, 128, 128], "out_channels": [128, 128, 128, 400], "n_heads": 3, "n_layers": 4, "targets": 200, "gat_type": "gatv2_custom", "use_residuals": true, "use_jk": true}
