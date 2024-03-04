@@ -115,7 +115,7 @@ def cast_edges_to_nodes(
         num_nodes (bool, optional): Number of nodes. If true, the 0 dimension of the scattered 
             matrix is equal to number of nodes. Defaults to None.
     """
-    edge_attr_aggr = scatter_sum(edge_attrs, indices, 
+    edge_attr_aggr = scatter(edge_attrs, indices, 
                                  dim=0, dim_size=num_nodes)
     return edge_attr_aggr
 
@@ -188,7 +188,7 @@ def cast_nodes_to_globals(
     if batch is None:
         casted_node_attr = torch.sum(node_attr, dim=0, keepdim=True)
     else:
-        casted_node_attr = scatter_sum(node_attr, batch, dim=0, dim_size=num_globals)
+        casted_node_attr = scatter(node_attr, batch, dim=0, dim_size=num_globals)
     return casted_node_attr
 
 def cast_edges_to_globals(
@@ -218,5 +218,5 @@ def cast_edges_to_globals(
         indices = [torch.repeat_interleave(idx, rep) for idx, rep in \
             zip(node_inds, edge_counts)]
         indices = torch.cat(indices)
-        casted_edge_attr = scatter_sum(edge_attr, index=indices, dim=0, dim_size=num_globals)
+        casted_edge_attr = scatter(edge_attr, index=indices, dim=0, dim_size=num_globals)
     return casted_edge_attr
