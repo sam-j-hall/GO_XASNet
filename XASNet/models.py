@@ -75,9 +75,11 @@ class XASNet_GNN(torch.nn.Module):
                     int_layers.append(gnn_layer(in_c*heads, out_c, heads=heads)) 
                 elif i > 0:
                     int_layers.append(gnn_layer(in_c, out_c))
-                int_layers.append(torch.nn.BatchNorm1d(out_c))
-                int_layers.append(torch.nn.ReLU(inplace=True))
-                #self.batch_norms.append(torch.nn.BatchNorm1d(out_c))
+                #int_layers.append(torch.nn.BatchNorm1d(out_c))
+                #int_layers.append(torch.nn.ReLU(inplace=True))
+
+        for i, out_c in zip(range(num_layers), out_channels):
+            self.batch_norms.append(torch.nn.BatchNorm1d(out_c))
         
         if heads:
             int_layers.append(gnn_layer(in_channels[-1]*heads, 
@@ -117,15 +119,22 @@ class XASNet_GNN(torch.nn.Module):
                 edge_index: torch.Tensor, 
                 batch_seg: torch.Tensor) -> torch.Tensor:   
     
-        for layer in self.interaction_layers[:-1]:
-            if isinstance(layer, geomnn.MessagePassing):
-                x = layer(x, edge_index)
-            else:
-                x = layer(x)
+        for layer in enumerate(self.interaction_layers[:-1]):
+            x = layer[1](x, edge_index)
+            x = self.batch_norms[layer[0]](x)
+            x = self.dropout(F.relu(x))
+            #if isinstance(layer, geomnn.MessagePassing):
+                #print('EDGE_INEX')
+                #x = layer(x, edge_index)
+            #else:
+             #   print('NOPE')
+              #  x = layer(x)
                 #x = self.batch_norms[layer](x)
-                x = self.dropout(x)
-                
-        x = self.interaction_layers[-1](x, edge_index)        
+               # x = self.dropout(x)
+         
+        x = self.interaction_layers[-1](x, edge_index)    
+        x = self.batch_norms[self.num_layers - 1](x)
+        x = self.dropout(x)
         x = geomnn.global_mean_pool(x, batch_seg)
         #x = self.dropout(x)
         p = torch.nn.LeakyReLU(0.1)
