@@ -127,8 +127,9 @@ class XASNet_GNN(torch.nn.Module):
                 
         x = self.interaction_layers[-1](x, edge_index)        
         x = geomnn.global_mean_pool(x, batch_seg)
-        x = self.dropout(x)
-        out = self.out(x)
+        #x = self.dropout(x)
+        p = torch.nn.LeakyReLU(0.1)
+        out = p(self.out(x))
         return out
 
 
