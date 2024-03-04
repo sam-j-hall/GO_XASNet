@@ -3,20 +3,23 @@ import numpy as np
 from bokeh.plotting import figure
 from bokeh.palettes import HighContrast3
 
-def pred_spec(model, index, test_dataset):
+def pred_spec(model, index, test_dataset, graphnet):
     # --- Set the model to evaluation mode
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu'
 
-    x, edge_index = test_dataset[index].x, test_dataset[index].edge_index
+    x, edge_index = test_dataset[index[0]].x, test_dataset[index[0]].edge_index
     batch = torch.repeat_interleave(torch.tensor(0), x.shape[0])
 
     model.to(device)
     model.eval()
     with torch.no_grad():
-        pred = model(x, edge_index, batch)
+        if graphnet == True:
+            pred = model(index[1])
+        else:
+            pred = model(x, edge_index, batch)
 
     # --- Access the predicted output for the single graph
-    true_spectrum = test_dataset[index].spectrum.cpu().numpy()
+    true_spectrum = test_dataset[index[0]].spectrum.cpu().numpy()
     predicted_spectrum = pred.cpu().numpy()
     predicted_spectrum = predicted_spectrum.reshape(-1)
     
