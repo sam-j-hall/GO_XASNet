@@ -22,7 +22,7 @@ def rse_loss(prediction: torch.Tensor,
     Returns:
         torch.Tensor
     """
-    dE = (300 - 270) / 100
+    dE = (300 - 280) / 200
     nom = torch.sum(dE*torch.pow((target-prediction), 2))
     denom = torch.sum(dE*target)
     return torch.sqrt(nom) / denom 
@@ -50,8 +50,9 @@ def rse_predictions(model: Any,
     for graph in test_data:
         graph = copy.deepcopy(graph)
         x, edge_idx, idx = graph.x, graph.edge_index, graph.idx
-        batch_seg = torch.tensor(np.repeat(0, x.shape[0]), 
-                                 device=device)
+        batch_seg = torch.repeat_interleave(torch.tensor(0), x.shape[0])
+        #batch_seg = torch.tensor(np.repeat(0, x.shape[0]), 
+                             #    device=device)
         model.to(device)
         model.eval()
         with torch.no_grad():
