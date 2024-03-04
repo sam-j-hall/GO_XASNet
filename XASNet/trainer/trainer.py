@@ -58,11 +58,12 @@ class GNNTrainer():
         train_graphnet: bool =False
         ):
 
-        #start = torch.cuda.Event(enable_timing=True)
-        #end = torch.cuda.Event(enable_timing=True)
         prev_loss = torch.tensor(float('inf'), device=self.device)
 
-        #start.record()
+        if self.device == 'cuda':
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+            start.record()
         for epoch in tqdm(range(epochs), position=0, leave=True):
             train_loss = 0
             num_molecules_train = 0
@@ -125,9 +126,10 @@ class GNNTrainer():
                 prev_loss = avg_val_loss
 
             if epoch % int(write_every) == 0:
-                #end.record()
-                #torch.cuda.synchronize()
-                #time=f"{start.elapsed_time(end)/6e4:.2f} mins"
+                if self.device == 'cuda':
+                    end.record()
+                    torch.cuda.synchronize()
+                    time=f"{start.elapsed_time(end)/6e4:.2f} mins"
                 lr=round(float(scheduler.get_lr()[0]), 5)
                 self.metrics.store_metrics(
                     mode='train',
@@ -145,7 +147,8 @@ class GNNTrainer():
                     )
                 self.save_metrics()
                 
-                #print(f"time = {time} mins")
+                if self.device == 'cuda':
+                    print(f"time = {time} mins")
                 print(f"epoch {epoch} | average train loss = {avg_train_loss:.5f}",
                     f" and average validation loss = {avg_val_loss:.5f}",
                     f" |learning rate = {lr:.5f}")
