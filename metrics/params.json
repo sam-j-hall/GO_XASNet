@@ -1,1 +1,1 @@
-{"training": true}
+{"training": true, "gnn_name": "gcn", "in_channels": [15, 64, 128, 256], "out_channels": [64, 128, 256, 512], "num_targets": 200, "num_layers": 4, "heads": 1}
