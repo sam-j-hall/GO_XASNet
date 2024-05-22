@@ -30,8 +30,8 @@ class GNNTrainer():
         """
         self.model = model
         self.model_name = model_name 
-        self._save_model_params()
-
+        self.metric_path = metric_path
+        self._save_model_params(self.metric_path)
         self.metrics = MetricManager()
         # load the previous metrics from last training
         if osp.exists(osp.join(metric_path, "train_metrics.csv")):
@@ -91,9 +91,9 @@ class GNNTrainer():
                 train_loss += loss
                 num_molecules_train += batch.num_graphs
                 optimizer.step()
-            scheduler.step()
+            #scheduler.step()
             
-            avg_train_loss = train_loss / num_molecules_train
+            avg_train_loss = train_loss #/ num_molecules_train
 
             # plt.plot(pred[0].cpu().detach().numpy())
             # plt.plot(batch[0].spectrum.cpu().detach().numpy())
@@ -117,9 +117,11 @@ class GNNTrainer():
                         pred.view(-1, 1), 
                         batch.spectrum.view(-1, 1)
                     )
+                    #print('loss', loss)
                     val_loss += loss
                     num_molecules_val += batch.num_graphs
-            avg_val_loss = val_loss / num_molecules_val
+            avg_val_loss = val_loss #/ num_molecules_val
+            scheduler.step(avg_val_loss)
 
             if avg_val_loss < prev_loss:
                 self._save_model()
@@ -130,7 +132,8 @@ class GNNTrainer():
                     end.record()
                     torch.cuda.synchronize()
                     time=f"{start.elapsed_time(end)/6e4:.2f} mins"
-                lr=round(float(scheduler.get_lr()[0]), 5)
+                lr=optimizer.param_groups[0]['lr']
+                #lr=round(float(scheduler.get_lr()[0]), 5)
                 self.metrics.store_metrics(
                     mode='train',
                     epoch=epoch,
@@ -145,13 +148,13 @@ class GNNTrainer():
                     loss=round(float(avg_val_loss), 5),
                     lr=lr
                     )
-                self.save_metrics()
+                self.save_metrics(self.metric_path)
                 
                 if self.device == 'cuda':
                     print(f"time = {time} mins")
                 print(f"epoch {epoch} | average train loss = {avg_train_loss:.5f}",
-                    f" and average validation loss = {avg_val_loss:.5f}",
-                    f" |learning rate = {lr:.5f}")
+                    f"and average validation loss = {avg_val_loss:.5f}",
+                    f"| learning rate = {lr:.5f}")
 
 
     def predict(
