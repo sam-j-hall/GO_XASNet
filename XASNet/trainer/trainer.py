@@ -75,13 +75,15 @@ class GNNTrainer():
 
                 x, edge_index, batch_seg = batch.x, \
                     batch.edge_index, batch.batch
+                
+                edge_attr = batch.edge_attr
 
                 optimizer.zero_grad()
 
                 if train_graphnet:
                     pred = self.model(batch)
                 else:
-                    pred = self.model(x, edge_index, batch_seg)
+                    pred = self.model(x, edge_index, edge_attr, batch_seg)
 
                 loss = loss_fn(
                     pred.view(-1, 1),
@@ -112,7 +114,7 @@ class GNNTrainer():
                     if train_graphnet:
                         pred = self.model(batch)
                     else:
-                        pred = self.model(x, edge_index, batch_seg)
+                        pred = self.model(x, edge_index, edge_attr, batch_seg)
                     loss = loss_fn(
                         pred.view(-1, 1), 
                         batch.spectrum.view(-1, 1)

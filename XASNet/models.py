@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import torch_geometric.nn as geomnn
 from torch.nn import Linear, LSTM
-from torch_geometric.nn import MessagePassing, global_mean_pool, GATConv, GATv2Conv
+from torch_geometric.nn import MessagePassing, global_mean_pool, GATConv, GATv2Conv, NNConv, PNAConv
 from torch.nn import ModuleList, Dropout
 from torch_geometric.nn import global_add_pool
 
@@ -340,3 +340,145 @@ class XASNet_GraphNet(torch.nn.Module):
         x = self.dropout(x)
         out = self.output_dense(x)
         return out
+    
+class XASNet_NNconv(torch.nn.Module):
+    """
+    Generaln implementation of NN_Conv model
+    """
+    def __init__(
+            self,
+            gnn_name: str,
+            num_layers: int,
+            in_channels: List[int],
+            out_channels: List[int],
+            num_targets: int,
+    ) -> None:
+        super().__init__()
+        assert num_layers > 0
+        assert len(in_channels) == num_layers and \
+        len(out_channels) == num_layers
+
+        self.gnn_name = gnn_name
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.num_targets = num_targets
+        self.num_layers = num_layers
+
+        nn1 = torch.nn.Sequential(
+            torch.nn.Linear(3, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 5 * 64)
+        )
+
+        self.conv1 = NNConv(5, 64, nn1, aggr='mean')
+        self.batchnorm1 = torch.nn.BatchNorm1d(64)
+
+        nn2 = torch.nn.Sequential(
+            torch.nn.Linear(3, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 64 * 128)
+        )
+
+        self.conv2 = NNConv(64, 128, nn2, aggr='mean')
+        self.batchnorm2 = torch.nn.BatchNorm1d(128)
+
+        nn3 = torch.nn.Sequential(
+            torch.nn.Linear(3, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 128 * 256)
+        )
+
+        self.conv3 = NNConv(128, 256, nn3, aggr='mean')
+        self.batchnorm3 = torch.nn.BatchNorm1d(256)
+
+        self.mlp = torch.nn.Linear(256, num_targets)
+
+    def forward(self,
+                x: torch.Tensor,
+                edge_index: torch.Tensor,
+                edge_attr: torch.Tensor,
+                batch_seg: torch.Tensor) -> torch.Tensor:
+        
+        x = self.conv1(x, edge_index, edge_attr)
+        x = self.batchnorm1(x)
+
+        x = F.relu(x)
+        x = F.dropout(x, 0.5, training=self.training)
+
+        x = self.conv2(x, edge_index, edge_attr)
+        x = self.batchnorm2(x)
+
+        x = F.relu(x)
+        x = F.dropout(x, 0.5, training=self.training)
+
+        x = self.conv3(x, edge_index, edge_attr)
+        x = self.batchnorm3(x)
+
+        x = F.relu(x)
+
+        x = geomnn.global_mean_pool(x, batch_seg)
+
+        p = torch.nn.LeakyReLU(0.1)
+        out = p(self.mlp(x))
+
+        return out
+    
+class XASNet_PNA(torch.nn.Module):
+    """
+    """
+    def __init__(
+            self,
+            num_targets: int,
+            deg: torch.Tensor
+    ) -> None:
+        super().__init__()
+
+        self.num_targets = num_targets
+        self.deg = deg
+
+        aggregators = ['mean', 'min', 'max', 'std']
+        scalers = ['identity', 'amplification', 'attenuation']
+
+        self.conv1 = PNAConv(in_channels=5, out_channels=64, aggregators=aggregators, scalers=scalers,
+                             deg=self.deg, edge_dim=3)
+        
+        self.batchnorm1 = torch.nn.BatchNorm1d(64)
+
+        self.conv2 = PNAConv(in_channels=64, out_channels=128, aggregators=aggregators, scalers=scalers,
+                             deg=deg, edge_dim=3)
+        self.batchnorm2 = torch.nn.BatchNorm1d(128)
+
+        self.conv3 = PNAConv(in_channels=128, out_channels=256, aggregators=aggregators, scalers=scalers,
+                             deg=deg, edge_dim=3)
+        self.batchnorm3 = torch.nn.BatchNorm1d(256)
+
+        self.mlp = torch.nn.Linear(256, num_targets)
+
+    def forward(self,
+                x: torch.Tensor,
+                edge_index: torch.Tensor,
+                edge_attr: torch.Tensor,
+                batch_seg: torch.Tensor) -> torch.Tensor:
+        print('x', x.shape)
+        print('idx', edge_index.shape)
+        print('attr', edge_attr.shape)
+        x = self.conv1(x, edge_index, edge_attr)
+        x= self.batchnorm1(x)
+        x = F.relu(x)
+        x = F.dropout(x, 0.5, training=self.training)
+
+        x = self.conv2(x, edge_index, edge_attr)
+        x = self.batchnorm2(x)
+        x = F.relu(x)
+        x = F.dropout(x, 0.5, training=self.training)
+
+        x = self.conv3(x, edge_index, edge_attr)
+        x = self.batchnorm3(x)
+        x = F.relu(x)
+
+        x = geomnn.global_mean_pool(x, batch_seg)
+
+        p = torch.nn.LeakyReLU(0.1)
+        out = p(self.mlp(x))
+
+        return out 
