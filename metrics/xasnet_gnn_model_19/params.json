@@ -1,0 +1,1 @@
+{"training": true, "gnn_name": "graphConv", "in_channels": [15, 128], "out_channels": [128, 64], "num_targets": 200, "num_layers": 2, "heads": 0}
